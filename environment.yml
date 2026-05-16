@@ -1,0 +1,16 @@
+name: cuik-benchmarks
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - rdkit>=2024.03
+  - numpy
+  - pandas
+  - matplotlib
+  - seaborn
+  - tqdm
+  - pip
+  - pip:
+      - chemprop
+      - cuik-molmaker
