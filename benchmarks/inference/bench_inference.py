@@ -34,6 +34,15 @@ COMMON_ARGS = [
 ]
 
 
+def find_model_pt(model_dir):
+    """Find the .pt model file inside a chemprop output directory."""
+    for root, dirs, files in os.walk(model_dir):
+        for f in files:
+            if f.endswith(".pt"):
+                return os.path.join(root, f)
+    return None
+
+
 def train_reference_model(data_path, output_dir, use_cuik, seed=0):
     """Train a small reference model used only for inference timing."""
     chemprop_bin = os.path.join(os.path.dirname(sys.executable), "chemprop")
@@ -58,14 +67,10 @@ def train_reference_model(data_path, output_dir, use_cuik, seed=0):
         print(result.stderr[-2000:])
         return None
 
-    # Find the .pt model file
-    for root, dirs, files in os.walk(output_dir):
-        for f in files:
-            if f.endswith(".pt"):
-                return os.path.join(root, f)
-
-    print("    ERROR: no .pt model file found in", output_dir)
-    return None
+    model_pt = find_model_pt(output_dir)
+    if model_pt is None:
+        print("    ERROR: no .pt model file found in", output_dir)
+    return model_pt
 
 
 def run_chemprop_predict(test_path, model_path, output_path, use_cuik):
@@ -118,7 +123,8 @@ def main():
             print(f"ERROR: {train_data} not found. Run prepare_subsets.py first.")
             sys.exit(1)
 
-        if not os.path.exists(model_cache):
+        model_pt = find_model_pt(model_cache)
+        if model_pt is None:
             os.makedirs(model_cache, exist_ok=True)
             model_pt = train_reference_model(train_data, model_cache, use_cuik)
             if model_pt is None:
@@ -126,7 +132,7 @@ def main():
                 continue
             print(f"    Model saved at {model_pt}")
         else:
-            print(f"  Reusing existing model at {model_cache}")
+            print(f"  Reusing existing model at {model_pt}")
 
         for n_k in args.sizes:
             test_path = os.path.join(args.data_dir, f"rgd1_{n_k}k.csv")
@@ -146,7 +152,7 @@ def main():
 
                 elapsed = run_chemprop_predict(
                     test_path=test_path,
-                    model_path=model_cache,
+                    model_path=model_pt,
                     output_path=out_path,
                     use_cuik=use_cuik,
                 )
