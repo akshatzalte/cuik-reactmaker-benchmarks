@@ -114,26 +114,26 @@ def main():
     rows = []
     paths = [("baseline", False), ("cuik", True)]
 
-    for path_name, use_cuik in paths:
-        # Train one reference model per path (reused across all test sizes)
-        model_cache = f"results/models/ref_model_{path_name}"
-        train_data = os.path.join(args.data_dir, f"rgd1_{args.model_train_size}.csv")
+    # Train a single reference model (baseline path) reused for both timing runs.
+    # Model weights don't affect timing — only the featurization flag differs.
+    train_data = os.path.join(args.data_dir, f"rgd1_{args.model_train_size}.csv")
+    if not os.path.exists(train_data):
+        print(f"ERROR: {train_data} not found. Run prepare_subsets.py first.")
+        sys.exit(1)
 
-        if not os.path.exists(train_data):
-            print(f"ERROR: {train_data} not found. Run prepare_subsets.py first.")
-            sys.exit(1)
-
-        model_pt = find_model_pt(model_cache)
+    model_cache = "results/models/ref_model"
+    model_pt = find_model_pt(model_cache)
+    if model_pt is None:
+        os.makedirs(model_cache, exist_ok=True)
+        model_pt = train_reference_model(train_data, model_cache, use_cuik=False)
         if model_pt is None:
-            os.makedirs(model_cache, exist_ok=True)
-            model_pt = train_reference_model(train_data, model_cache, use_cuik)
-            if model_pt is None:
-                print(f"  Skipping {path_name}: model training failed")
-                continue
-            print(f"    Model saved at {model_pt}")
-        else:
-            print(f"  Reusing existing model at {model_pt}")
+            print("ERROR: reference model training failed")
+            sys.exit(1)
+        print(f"  Reference model saved at {model_pt}")
+    else:
+        print(f"  Reusing reference model at {model_pt}")
 
+    for path_name, use_cuik in paths:
         for n_k in args.sizes:
             test_path = os.path.join(args.data_dir, f"rgd1_{n_k}k.csv")
             if not os.path.exists(test_path):
@@ -141,7 +141,6 @@ def main():
                 continue
 
             n_reactions = n_k * 1000
-            times = []
 
             for trial in range(args.n_trials):
                 print(f"  path={path_name} | n={n_k}k | trial={trial+1}/{args.n_trials} ...",
@@ -167,7 +166,6 @@ def main():
                     continue
 
                 rxns_per_sec = n_reactions / elapsed
-                times.append(elapsed)
                 print(f"    elapsed={elapsed:.2f}s | {rxns_per_sec:.0f} rxns/s")
 
                 rows.append({
