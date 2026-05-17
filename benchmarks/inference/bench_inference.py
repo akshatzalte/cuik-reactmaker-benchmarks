@@ -29,7 +29,6 @@ import time
 PREDICT_SIZES = [1, 5, 10, 50, 100]   # in thousands
 
 COMMON_ARGS = [
-    "--smiles-columns", "smiles",
     "--reaction-columns", "smiles",
     "--keep-h",
 ]
@@ -37,8 +36,9 @@ COMMON_ARGS = [
 
 def train_reference_model(data_path, output_dir, use_cuik, seed=0):
     """Train a small reference model used only for inference timing."""
+    chemprop_bin = os.path.join(os.path.dirname(sys.executable), "chemprop")
     cmd = [
-        sys.executable, "-m", "chemprop", "train",
+        chemprop_bin, "train",
         "--data-path", data_path,
         "--output-dir", output_dir,
         "--epochs", "3",
@@ -69,8 +69,9 @@ def train_reference_model(data_path, output_dir, use_cuik, seed=0):
 
 
 def run_chemprop_predict(test_path, model_path, output_path, use_cuik):
+    chemprop_bin = os.path.join(os.path.dirname(sys.executable), "chemprop")
     cmd = [
-        sys.executable, "-m", "chemprop", "predict",
+        chemprop_bin, "predict",
         "--test-path", test_path,
         "--model-path", model_path,
         "--output", output_path,

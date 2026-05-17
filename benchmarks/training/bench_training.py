@@ -30,7 +30,6 @@ import time
 DATASET_SIZES = [1, 5, 10, 50, 100]   # in thousands — matches rgd1_{N}k.csv filenames
 
 CHEMPROP_TRAIN_ARGS = [
-    "--smiles-columns", "smiles",
     "--reaction-columns", "smiles",
     "--target-columns", "ea",
     "--keep-h",
@@ -38,8 +37,9 @@ CHEMPROP_TRAIN_ARGS = [
 
 
 def run_chemprop_train(data_path, output_dir, batch_size, epochs, seed, use_cuik):
+    chemprop_bin = os.path.join(os.path.dirname(sys.executable), "chemprop")
     cmd = [
-        sys.executable, "-m", "chemprop", "train",
+        chemprop_bin, "train",
         "--data-path", data_path,
         "--output-dir", output_dir,
         "--epochs", str(epochs),
