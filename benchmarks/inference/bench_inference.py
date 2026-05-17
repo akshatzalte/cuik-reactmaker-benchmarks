@@ -100,8 +100,12 @@ def run_chemprop_predict(test_path, model_path, output_path, use_cuik):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="data/")
-    parser.add_argument("--model-train-size", default="10k",
-                        help="Dataset size (e.g. '10k') used to train the reference model")
+    parser.add_argument("--model-path", default=None,
+                        help="Path to an existing .pt model file. If not provided, a reference "
+                             "model is trained from --model-train-data.")
+    parser.add_argument("--model-train-data", default=None,
+                        help="CSV to train a reference model from (used only if --model-path is "
+                             "not given). Defaults to data/rgd1_10k.csv.")
     parser.add_argument("--output", default="results/raw/inference_timing.csv")
     parser.add_argument("--n-trials", type=int, default=3)
     parser.add_argument("--sizes", nargs="+", type=int, default=PREDICT_SIZES,
@@ -109,29 +113,33 @@ def main():
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
-    os.makedirs("results/models", exist_ok=True)
 
     rows = []
     paths = [("baseline", False), ("cuik", True)]
 
-    # Train a single reference model (baseline path) reused for both timing runs.
-    # Model weights don't affect timing — only the featurization flag differs.
-    train_data = os.path.join(args.data_dir, f"rgd1_{args.model_train_size}.csv")
-    if not os.path.exists(train_data):
-        print(f"ERROR: {train_data} not found. Run prepare_subsets.py first.")
-        sys.exit(1)
-
-    model_cache = "results/models/ref_model"
-    model_pt = find_model_pt(model_cache)
-    if model_pt is None:
-        os.makedirs(model_cache, exist_ok=True)
-        model_pt = train_reference_model(train_data, model_cache, use_cuik=False)
-        if model_pt is None:
-            print("ERROR: reference model training failed")
+    # Resolve the reference model — either provided directly or trained on the fly.
+    if args.model_path is not None:
+        model_pt = args.model_path
+        if not os.path.exists(model_pt):
+            print(f"ERROR: --model-path {model_pt} not found.")
             sys.exit(1)
-        print(f"  Reference model saved at {model_pt}")
+        print(f"  Using provided model: {model_pt}")
     else:
-        print(f"  Reusing reference model at {model_pt}")
+        train_data = args.model_train_data or os.path.join(args.data_dir, "rgd1_10k.csv")
+        if not os.path.exists(train_data):
+            print(f"ERROR: {train_data} not found.")
+            sys.exit(1)
+        model_cache = "results/models/ref_model"
+        model_pt = find_model_pt(model_cache)
+        if model_pt is None:
+            os.makedirs(model_cache, exist_ok=True)
+            model_pt = train_reference_model(train_data, model_cache, use_cuik=False)
+            if model_pt is None:
+                print("ERROR: reference model training failed")
+                sys.exit(1)
+            print(f"  Reference model saved at {model_pt}")
+        else:
+            print(f"  Reusing reference model at {model_pt}")
 
     for path_name, use_cuik in paths:
         for n_k in args.sizes:
