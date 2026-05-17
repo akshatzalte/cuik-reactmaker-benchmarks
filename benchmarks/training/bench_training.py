@@ -24,7 +24,6 @@ import csv
 import os
 import subprocess
 import sys
-import tempfile
 import time
 
 DATASET_SIZES = [1, 5, 10, 50, 100]   # in thousands — matches rgd1_{N}k.csv filenames
@@ -67,6 +66,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data-dir", default="data/", help="Directory with rgd1_{N}k.csv files")
     parser.add_argument("--output", default="results/raw/training_timing.csv")
+    parser.add_argument("--model-dir", default="results/models/training",
+                        help="Root directory for saved model checkpoints")
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch-size", type=int, default=50)
     parser.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
@@ -75,6 +76,7 @@ def main():
     args = parser.parse_args()
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
+    os.makedirs(args.model_dir, exist_ok=True)
 
     rows = []
     paths = [("baseline", False), ("cuik", True)]
@@ -96,15 +98,17 @@ def main():
                 print(f"[{run_idx}/{total_runs}] n={n_k}k | path={path_name} | seed={seed} ...",
                       flush=True)
 
-                with tempfile.TemporaryDirectory() as tmp_dir:
-                    elapsed = run_chemprop_train(
-                        data_path=data_path,
-                        output_dir=tmp_dir,
-                        batch_size=args.batch_size,
-                        epochs=args.epochs,
-                        seed=seed,
-                        use_cuik=use_cuik,
-                    )
+                output_dir = os.path.join(args.model_dir, f"{n_k}k_{path_name}_seed{seed}")
+                os.makedirs(output_dir, exist_ok=True)
+
+                elapsed = run_chemprop_train(
+                    data_path=data_path,
+                    output_dir=output_dir,
+                    batch_size=args.batch_size,
+                    epochs=args.epochs,
+                    seed=seed,
+                    use_cuik=use_cuik,
+                )
 
                 if elapsed is None:
                     print(f"    FAILED — skipping")
