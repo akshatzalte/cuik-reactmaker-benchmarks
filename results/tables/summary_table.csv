@@ -1,0 +1,4 @@
+Tier,Baseline,C++ CGR,Speedup
+Featurization (batch=50),nan µs/rxn,nan µs/rxn,1.0×
+"Training (N=100k, epoch)",75.6 s,23.6 s,3.2×
+Inference (N=100k),81.84 s,17.45 s,4.7×
