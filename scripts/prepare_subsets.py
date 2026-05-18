@@ -12,7 +12,7 @@ import argparse
 import os
 import pandas as pd
 
-SIZES = [1_000, 5_000, 10_000, 50_000, 100_000]
+SIZES = [1_000, 5_000, 10_000, 50_000, 100_000, 300_000]
 SEED = 42
 
 

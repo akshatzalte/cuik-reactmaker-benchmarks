@@ -51,7 +51,7 @@ echo "[Step 3] Featurization total time vs dataset size..."
 python benchmarks/featurization/bench_featurization.py \
     --mode total \
     --data-path "$DATA" \
-    --n-reactions 1000 5000 10000 50000 100000 \
+    --n-reactions 1000 5000 10000 50000 100000 300000 \
     --batch-size 50 \
     --n-warmup 2 --n-trials 5 \
     --output results/raw/featurization_total.csv
