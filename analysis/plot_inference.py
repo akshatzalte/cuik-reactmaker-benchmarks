@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 """
-Figure 3: Inference time vs dataset size.
+Figure 3 (main): Inference time vs dataset size.
+Figure SI:       Inference speedup vs dataset size (supplementary).
 
 Reads: results/raw/inference_timing.csv
-Writes: results/figures/fig3_inference_speedup.pdf
+Writes:
+  results/figures/fig3_inference_speedup.{pdf,png}
+  results/figures/figSI_inference_speedup_vs_size.{pdf,png}
 """
 
 import os
@@ -12,11 +15,13 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
+plt.rcParams.update(plt.rcParamsDefault)
+
 INPUT = "results/raw/inference_timing.csv"
 OUTPUT_DIR = "results/figures"
 
 COLORS = {"baseline": "#d62728", "cuik": "#1f77b4"}
-LABELS = {"baseline": "Python CGR (baseline)", "cuik": "C++ CGR (cuik-molmaker)"}
+LABELS = {"baseline": "Python CGR", "cuik": "cuik-reactmaker (C++)"}
 
 
 def main():
@@ -30,13 +35,14 @@ def main():
         .reset_index()
     )
 
-    sizes = sorted(agg["n_reactions"].unique())
-    x_labels = [f"{n // 1000}k" for n in sizes]
+    base_agg = agg[agg["path"] == "baseline"].set_index("n_reactions")["median"]
+    cuik_agg = agg[agg["path"] == "cuik"].set_index("n_reactions")["median"]
+    common = sorted(set(base_agg.index) & set(cuik_agg.index))
+    speedups = [base_agg[n] / cuik_agg[n] for n in common]
 
-    fig, axes = plt.subplots(1, 2, figsize=(10, 4))
+    # ── Main figure: absolute inference time ─────────────────────────────────
+    fig, ax = plt.subplots(figsize=(5, 4))
 
-    # --- Left: absolute inference time ---
-    ax = axes[0]
     for path in ["baseline", "cuik"]:
         sub = agg[agg["path"] == path].sort_values("n_reactions")
         ax.errorbar(
@@ -45,46 +51,45 @@ def main():
             marker="o", linewidth=2, capsize=3,
             color=COLORS[path], label=LABELS[path],
         )
+
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Dataset size (reactions)", fontsize=12)
-    ax.set_ylabel("Inference time (s)", fontsize=12)
-    ax.set_title("Inference wall-clock time", fontsize=13)
-    ax.legend(fontsize=10)
-    ax.grid(True, which="both", alpha=0.3)
-    ax.set_xticks(sizes)
-    ax.set_xticklabels(x_labels)
+    ax.set_xlabel("Number of reactions")
+    ax.set_ylabel("Total inference time (s)")
+    ax.legend()
+    ax.grid(False)
 
-    # --- Right: speedup ---
-    ax = axes[1]
-    base_agg = agg[agg["path"] == "baseline"].set_index("n_reactions")["median"]
-    cuik_agg = agg[agg["path"] == "cuik"].set_index("n_reactions")["median"]
-    common = sorted(set(base_agg.index) & set(cuik_agg.index))
-
-    speedups = [base_agg[n] / cuik_agg[n] for n in common]
-    common_labels = [f"{n // 1000}k" for n in common]
-
-    ax.plot(common, speedups, marker="o", linewidth=2, color="#2ca02c")
-    ax.axhline(1.0, color="gray", linestyle="--", linewidth=1, alpha=0.6)
-    ax.set_xscale("log")
-    ax.xaxis.set_minor_locator(ticker.NullLocator())
-    ax.set_xlabel("Dataset size (reactions)", fontsize=12)
-    ax.set_ylabel("Inference speedup (baseline / cuik)", fontsize=12)
-    ax.set_title("Inference speedup", fontsize=13)
-    ax.grid(True, which="major", alpha=0.3)
-    ax.set_xticks(common)
-    ax.set_xticklabels(common_labels)
-    ax.set_ylim(bottom=0)
-
-    for x, y in zip(common, speedups):
-        ax.annotate(f"{y:.1f}×", xy=(x, y), xytext=(x, y + 0.15),
-                    ha="center", fontsize=9, color="#2ca02c")
+    speedup_at_largest = speedups[-1]
+    ax.text(
+        0.95, 0.10, f"{speedup_at_largest:.1f}× speedup",
+        transform=ax.transAxes,
+        ha="right", va="bottom", fontsize=13, fontweight="bold", color="dimgray",
+        bbox=dict(facecolor="white", edgecolor="none", alpha=0.8, pad=2),
+    )
 
     plt.tight_layout()
     out = os.path.join(OUTPUT_DIR, "fig3_inference_speedup.pdf")
     plt.savefig(out, bbox_inches="tight")
     plt.savefig(out.replace(".pdf", ".png"), dpi=150, bbox_inches="tight")
     print(f"Saved {out}")
+    plt.close()
+
+    # ── SI figure: speedup vs dataset size ───────────────────────────────────
+    fig2, ax2 = plt.subplots(figsize=(5, 4))
+    ax2.plot(common, speedups, marker="o", linewidth=2, color="#2ca02c")
+    ax2.axhline(1.0, color="gray", linestyle="--", linewidth=1, alpha=0.6)
+    ax2.set_xscale("log")
+    ax2.set_xlabel("Number of reactions")
+    ax2.set_ylabel("Speedup by cuik-reactmaker")
+    ax2.grid(False)
+    ax2.set_ylim(bottom=1.0, top=max(speedups) * 1.2)
+
+    plt.tight_layout()
+    out2 = os.path.join(OUTPUT_DIR, "figSI_inference_speedup_vs_size.pdf")
+    plt.savefig(out2, bbox_inches="tight")
+    plt.savefig(out2.replace(".pdf", ".png"), dpi=150, bbox_inches="tight")
+    print(f"Saved {out2}")
+    plt.close()
 
 
 if __name__ == "__main__":

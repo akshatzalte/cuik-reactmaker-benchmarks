@@ -14,6 +14,8 @@ Benchmarks the `--use-cuikmolmaker-featurization` flag (C++ `batch_reaction_feat
 
 > Measured on RGD1 (353k reactions), V2 featurizer / REAC_DIFF mode, batch_size=50, GPU: NVIDIA GeForce RTX 3090.
 
+![Headline results](results/figures/fig_combined.png)
+
 ### Headline speedups
 
 | Tier | Dataset | Baseline | C++ CGR | **Speedup** |
