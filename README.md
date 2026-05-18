@@ -65,7 +65,7 @@ Inference speedup is still growing at 100k (not yet converged) due to fixed mode
 
 ## Dataset
 
-**RGD1** (Grambow et al.) — 353,984 atom-mapped reactions with activation energies (kcal/mol).
+**RGD1** (Zhao et al.) — 353,984 atom-mapped reactions with activation energies (kcal/mol).
 - Citation: https://doi.org/10.5281/zenodo.10078142
 - Local path (not committed): `/home/akshatz/bond_order_free/barriers_rgd1/dataset/rgd1_data.csv`
 - Column `smiles` (R>>P atom-mapped SMILES), target `ea`
