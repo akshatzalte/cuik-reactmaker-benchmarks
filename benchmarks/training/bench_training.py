@@ -26,7 +26,7 @@ import subprocess
 import sys
 import time
 
-DATASET_SIZES = [1, 5, 10, 50, 100]   # in thousands — matches rgd1_{N}k.csv filenames
+DATASET_SIZES = [1, 5, 10, 50, 100, 300]   # in thousands — matches rgd1_{N}k.csv filenames
 
 CHEMPROP_TRAIN_ARGS = [
     "--reaction-columns", "smiles",
@@ -49,6 +49,8 @@ def run_chemprop_train(data_path, output_dir, batch_size, epochs, seed, use_cuik
 
     if use_cuik:
         cmd.append("--use-cuikmolmaker-featurization")
+    else:
+        cmd.append("--no-cache")  # disable graph precomputation for fair on-the-fly comparison
 
     t0 = time.perf_counter()
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -78,7 +80,12 @@ def main():
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     os.makedirs(args.model_dir, exist_ok=True)
 
+    # Load existing rows so partial reruns append rather than overwrite
     rows = []
+    if os.path.exists(args.output):
+        import csv as _csv
+        with open(args.output, newline="") as f:
+            rows = list(_csv.DictReader(f))
     paths = [("baseline", False), ("cuik", True)]
 
     total_runs = len(args.sizes) * len(paths) * len(args.seeds)

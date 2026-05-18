@@ -26,7 +26,7 @@ import sys
 import tempfile
 import time
 
-PREDICT_SIZES = [1, 5, 10, 50, 100]   # in thousands
+PREDICT_SIZES = [1, 5, 10, 50, 100, 300]   # in thousands
 
 COMMON_ARGS = [
     "--reaction-columns", "smiles",
@@ -114,7 +114,12 @@ def main():
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
+    # Load existing rows so partial reruns append rather than overwrite
     rows = []
+    if os.path.exists(args.output):
+        import csv as _csv
+        with open(args.output, newline="") as f:
+            rows = list(_csv.DictReader(f))
     paths = [("baseline", False), ("cuik", True)]
 
     # Resolve the reference model — either provided directly or trained on the fly.
