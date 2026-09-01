@@ -318,7 +318,6 @@ cuik-reactmaker-benchmarks/
 │   ├── figures/                               # committed — paper-ready PDF + PNG
 │   ├── tables/                                # committed — summary CSVs
 │   └── provisional_*/                         # non-reference validation runs
-├── paper/                                     # JOSS manuscript sources
 └── data/                                      # gitignored; created by prepare_subsets.py
 ```
 
