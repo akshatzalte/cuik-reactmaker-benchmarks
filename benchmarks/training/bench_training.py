@@ -7,7 +7,7 @@ and records wall-clock time per epoch. Both paths use the same conda env and che
 branch; only --use-cuikmolmaker-featurization differs.
 
 Usage:
-    conda activate chemprop_bench_v031
+    # any env with chemprop >= 2.3.1 (see README requirements)
     python benchmarks/training/bench_training.py \
         --data-dir data/ \
         --output results/raw/training_timing.csv \

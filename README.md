@@ -128,38 +128,29 @@ this accelerated featurization makes practical.
 
 ### Software
 
-| Package | Version used | Why pinned |
-|---------|--------------|-----------|
-| Python | 3.11 | Chemprop-supported (3.11 or 3.12). |
-| `chemprop` | 2.3.1 | First release containing **both** CGR paths (PR [#1365](https://github.com/chemprop/chemprop/pull/1365), merged 2026-08-03). |
-| `cuik-molmaker-pin` | 2026.3.5 | Mandatory Chemprop dependency; provides `cuik_molmaker` 0.3.1 (first release with `batch_reaction_featurizer`, cuik-molmaker PR [#4](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker/pull/4)). |
-| `rdkit` | 2026.03.5 | Locked by `cuik-molmaker-pin` — the pin exists to keep the RDKit ABI matched. |
-| `torch` | 2.5.1+cu121 | Host-specific: this machine's driver is CUDA 12.0, and torch ≥ 2.12 requires > 12.0. On a newer driver, drop the pin and let pip resolve torch. |
-| `pandas`, `matplotlib` | any recent | Analysis and plotting only. |
+Any environment with these versions works — there is nothing benchmark-specific to install:
 
----
-
-## Installation
-
-This follows Chemprop's recommended install
-([Option 1](https://chemprop.readthedocs.io/en/latest/installation.html)) — pip pulls
-`cuik-molmaker-pin`, which brings a matched `cuik_molmaker` + `rdkit` pair:
+| Package | Requirement | Why |
+|---------|-------------|-----|
+| Python | 3.11 or 3.12 | Chemprop-supported versions. |
+| `chemprop` | **>= 2.3.1** | First release carrying both CGR paths (PR [#1365](https://github.com/chemprop/chemprop/pull/1365)). |
+| `cuik_molmaker` | **>= 0.3.0** | Provides `batch_reaction_featurizer` (PR [#4](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker/pull/4)). Installed automatically as a Chemprop dependency. |
+| `rdkit` | matched to `cuik_molmaker` | Not chosen by hand — see the ABI note below. |
+| `torch` | >= 2.1, matching your CUDA driver | Reference runs used 2.5.1+cu121 because this host's driver is CUDA 12.0. |
+| `pandas`, `matplotlib`, `pytest` | any recent | Analysis, plotting, correctness checks. |
 
 ```bash
-conda create -n chemprop_bench_v031 -y python=3.11
-conda activate chemprop_bench_v031
-
-# Host-specific torch pin (CUDA 12.0 driver); skip on a newer driver.
-pip install "torch==2.5.1+cu121" --index-url https://download.pytorch.org/whl/cu121
-
-pip install "chemprop==2.3.1"
-pip install pandas matplotlib pytest
+pip install "chemprop>=2.3.1" pandas matplotlib pytest
 ```
 
-Verify the stack before timing anything:
+That single command is the whole setup: `chemprop` pulls `cuik-molmaker-pin`, which installs a
+matched `cuik_molmaker` + `rdkit` pair. Pin torch first only if your driver needs it
+(`pip install "torch==2.5.1+cu121" --index-url https://download.pytorch.org/whl/cu121`).
+
+Check the stack before timing anything:
 
 ```bash
-cd ~   # NOT a directory containing a `cuik_molmaker/` or `matplotlib/` folder — see pitfalls
+cd ~   # not a directory holding a `cuik_molmaker/` or `matplotlib/` folder — see pitfalls
 python -c "
 import chemprop, cuik_molmaker, rdkit, torch
 print(chemprop.__version__, rdkit.__version__, torch.__version__, torch.cuda.is_available())
@@ -167,7 +158,7 @@ print('reaction API:', hasattr(cuik_molmaker, 'batch_reaction_featurizer'))
 "
 ```
 
-Expected: `2.3.1 2026.03.5 2.5.1+cu121 True` and `reaction API: True`.
+`reaction API: True` means the C++ CGR path is available.
 
 ### Pitfalls
 
@@ -177,10 +168,8 @@ Expected: `2.3.1 2026.03.5 2.5.1+cu121 True` and `reaction API: True`.
 `cuik_molmaker` from conda-forge links against conda's RDKit shared libraries; the PyPI wheel
 links against the hashed libraries inside the `rdkit` wheel. Installing one on top of the other
 yields `ImportError: libRDKit*.so: cannot open shared object file` or an `undefined symbol`
-error. Pick **one** channel for the whole `rdkit` + `cuik_molmaker` pair:
-
-- all-pip: `pip install chemprop` (this README), or
-- all-conda: `conda env create -f environment.yml` from the Chemprop repo, then `pip install --no-deps -e .`
+error. Pick **one** channel for the whole `rdkit` + `cuik_molmaker` pair — all-pip
+(`pip install chemprop`) or all-conda (`conda install -c conda-forge chemprop`).
 </details>
 
 <details>
@@ -189,7 +178,7 @@ error. Pick **one** channel for the whole `rdkit` + `cuik_molmaker` pair:
 Python puts the working directory first on `sys.path`. Running from a directory that contains a
 `cuik_molmaker/` folder (e.g. a local cuik-molmaker source checkout) or a `matplotlib/` folder
 (e.g. `/tmp`, which often holds `MPLCONFIGDIR`) imports that folder instead of the installed
-package. **Always run benchmarks from the repo root**, `~/projects/cuik-reactmaker-benchmarks`.
+package. Run the benchmarks from this repo's root.
 </details>
 
 ---
@@ -216,12 +205,7 @@ python scripts/prepare_subsets.py \
 
 ## Reproducing the benchmarks
 
-Always run from the repo root with the env active:
-
-```bash
-conda activate chemprop_bench_v031
-cd ~/projects/cuik-reactmaker-benchmarks
-```
+Run everything from the repo root, in an environment meeting the requirements above.
 
 ### Step 0 — confirm correctness first
 

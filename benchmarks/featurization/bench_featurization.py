@@ -7,7 +7,7 @@ Two sub-experiments:
   --mode total     : total featurization time vs dataset size (fixed batch_size=50, vary N)
 
 Usage:
-    conda activate chemprop_bench_v031
+    # any env with chemprop >= 2.3.1 (see README requirements)
     cd ~/projects/cuik-reactmaker-benchmarks
 
     # Per-reaction time vs batch size
