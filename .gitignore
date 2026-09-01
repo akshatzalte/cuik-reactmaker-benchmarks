@@ -10,15 +10,3 @@ __pycache__/
 *.log
 *.tmp
 
-# Presentation (local only)
-paper/presentation/
-
-# Paper build artifacts
-paper/paper.pdf
-paper/paper.tex
-paper/paper.aux
-paper/paper.bbl
-paper/paper.log
-paper/paper.out
-paper/paper_arxiv.zip
-paper/arxiv_bundle/
