@@ -1,32 +1,53 @@
 # cuik-reactmaker-benchmarks
 
-Timing benchmarks for **cuik-reactmaker** — the reaction extension of
-[cuik-molmaker](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker), which moves
-Condensed Graph of Reaction (CGR) featurization from Python into batched C++ for
-[Chemprop](https://github.com/chemprop/chemprop).
+`cuik-reactmaker` extends [`cuik-molmaker`](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker)
+from molecules to **reactions**. Where `cuik-molmaker` turns a batch of SMILES into atom, bond and
+edge-index arrays in C++, `cuik-reactmaker` does the same for an atom-mapped reactant/product pair,
+producing the **Condensed Graph of Reaction (CGR)** — the doubled atom and bond feature tensors
+that reaction GNNs train on — for all six `RxnMode` variants and all four atom-featurizer modes.
 
-cuik-molmaker accelerates *molecule* featurization by handing a whole batch of SMILES to C++ in a
-single call. cuik-reactmaker extends that to *reactions*: `batch_reaction_featurizer` builds the
-CGR — atom-mapped reactant/product pair, six `RxnMode` variants, all four atom-featurizer modes —
-entirely in C++. It is not a separate package to install. The work is upstreamed into both
-projects and ships in their releases:
+Featurizing reactions this way is **8.4× faster** than the reference Python implementation, which
+carries through to **3.2× faster training** per epoch and **4.7× faster inference** on a 100k-reaction
+benchmark. This repository holds the measurements behind those numbers.
+
+The acceleration comes from the same idea that makes `cuik-molmaker` fast, applied to reactions: an
+entire minibatch of reactions crosses into C++ in a single call, where the CGR is assembled with
+direct bond lookups rather than per-atom, per-bond Python calls.
+
+<!-- FIGURE PLACEHOLDER: overview / pipeline schematic goes here.
+     Drop the image into results/figures/ and reference it as:
+     ![Pipeline overview](results/figures/<filename>.png) -->
+
+## Headline results
+
+> RGD1 (353k reactions) · V2 featurizer · REAC_DIFF mode · `batch_size=50` · NVIDIA GeForce RTX 3090.
+
+![Headline results](results/figures/fig_combined.png)
+
+| Tier | Dataset | Baseline | cuik-reactmaker | **Speedup** |
+|------|---------|----------|-----------------|-------------|
+| Featurization | 100k reactions | 71.4 s | 8.5 s | **8.4×** |
+| Training (per epoch) | 100k reactions | 75.6 s | 23.6 s | **3.2×** |
+| Inference | 100k reactions | 81.8 s | 17.5 s | **4.7×** |
+
+## Where it ships
+
+`cuik-reactmaker` is not a package to install — the work is upstreamed into the two projects that
+carry it:
 
 | Package | Minimum version | What it contributes |
 |---------|-----------------|---------------------|
 | [cuik-molmaker](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker) | **0.3.0** ([PR #4](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker/pull/4)) | `batch_reaction_featurizer`, `reaction_mode_to_int` — the C++ CGR kernel |
-| [chemprop](https://github.com/chemprop/chemprop) | **2.3.1** ([PR #1365](https://github.com/chemprop/chemprop/pull/1365)) | `CuikmolmakerCGRFeaturizer`, `CuikmolmakerReactionDataset`, and the `--use-cuikmolmaker-featurization` flag for reactions |
+| [chemprop](https://github.com/chemprop/chemprop) | **2.3.1** ([PR #1365](https://github.com/chemprop/chemprop/pull/1365)) | `CuikmolmakerCGRFeaturizer`, `CuikmolmakerReactionDataset`, and `--use-cuikmolmaker-featurization` for reactions |
 
-**This repository holds only the benchmarks** — the measurements behind those merges. If you want
-to *use* the fast path, see [Using it in your own work](#using-it-in-your-own-work); nothing here
-needs to be installed.
+[Chemprop](https://github.com/chemprop/chemprop) is the first adopter and the setting for every
+benchmark here: it already had a Python CGR featurizer, so the two implementations sit side by side
+in one released package and a single flag switches between them — same env, same data, same seeds.
 
-Both featurization paths ship in the same released Chemprop, so every comparison here is one flag
-apart — same env, same data, same seeds:
-
-| Path | Featurizer | How it is enabled |
-|------|------------|-------------------|
+| Path | Featurizer | Enabled by |
+|------|------------|-----------|
 | Baseline (Python) | `CondensedGraphOfReactionFeaturizer` — one reaction at a time | default |
-| C++ (cuik-molmaker) | `batch_reaction_featurizer` — whole batch in one C++ call | `--use-cuikmolmaker-featurization` |
+| cuik-reactmaker (C++) | `batch_reaction_featurizer` — whole batch in one call | `--use-cuikmolmaker-featurization` |
 
 Three tiers are measured:
 
@@ -35,24 +56,6 @@ Three tiers are measured:
 | Featurization only | µs/reaction and total time; sweeps batch size and dataset size | `benchmarks/featurization/bench_featurization.py` |
 | End-to-end training | s/epoch; sweeps dataset size | `benchmarks/training/bench_training.py` |
 | Inference throughput | total seconds; sweeps dataset size | `benchmarks/inference/bench_inference.py` |
-
----
-
-## Headline results
-
-> RGD1 (353k reactions) · V2 featurizer · REAC_DIFF mode · `batch_size=50` · NVIDIA GeForce RTX 3090.
-
-![Headline results](results/figures/fig_combined.png)
-
-| Tier | Dataset | Baseline | C++ CGR | **Speedup** |
-|------|---------|----------|---------|-------------|
-| Featurization | 100k reactions | 71.4 s | 8.5 s | **8.4×** |
-| Training (per epoch) | 100k reactions | 75.6 s | 23.6 s | **3.2×** |
-| Inference | 100k reactions | 81.8 s | 17.5 s | **4.7×** |
-
-<!-- FIGURE PLACEHOLDER: pipeline / overview schematic goes here once available.
-     Add the image to results/figures/ (or docs/) and reference it as:
-     ![Pipeline overview](results/figures/<filename>.png) -->
 
 ---
 
