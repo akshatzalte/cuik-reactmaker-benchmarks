@@ -1,0 +1,3 @@
+path,n_reactions,trial,total_time_s,rxns_per_sec
+baseline,1000,0,4.671,214.1
+cuik,1000,0,3.886,257.3
