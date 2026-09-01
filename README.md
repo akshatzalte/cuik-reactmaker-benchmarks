@@ -1,11 +1,27 @@
 # cuik-reactmaker-benchmarks
 
-Timing benchmarks for **C++ vs. Python Condensed Graph of Reaction (CGR) featurization** in
-[Chemprop](https://github.com/chemprop/chemprop), powered by
-[cuik-molmaker](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker).
+Timing benchmarks for **cuik-reactmaker** — the reaction extension of
+[cuik-molmaker](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker), which moves
+Condensed Graph of Reaction (CGR) featurization from Python into batched C++ for
+[Chemprop](https://github.com/chemprop/chemprop).
 
-Both featurization paths ship in the same released Chemprop (`>= 2.3.0`) and differ by a single
-CLI flag, so every comparison here is one flag apart — same env, same data, same seeds:
+cuik-molmaker accelerates *molecule* featurization by handing a whole batch of SMILES to C++ in a
+single call. cuik-reactmaker extends that to *reactions*: `batch_reaction_featurizer` builds the
+CGR — atom-mapped reactant/product pair, six `RxnMode` variants, all four atom-featurizer modes —
+entirely in C++. It is not a separate package to install. The work is upstreamed into both
+projects and ships in their releases:
+
+| Package | Minimum version | What it contributes |
+|---------|-----------------|---------------------|
+| [cuik-molmaker](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker) | **0.3.0** ([PR #4](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker/pull/4)) | `batch_reaction_featurizer`, `reaction_mode_to_int` — the C++ CGR kernel |
+| [chemprop](https://github.com/chemprop/chemprop) | **2.3.1** ([PR #1365](https://github.com/chemprop/chemprop/pull/1365)) | `CuikmolmakerCGRFeaturizer`, `CuikmolmakerReactionDataset`, and the `--use-cuikmolmaker-featurization` flag for reactions |
+
+**This repository holds only the benchmarks** — the measurements behind those merges. If you want
+to *use* the fast path, see [Using it in your own work](#using-it-in-your-own-work); nothing here
+needs to be installed.
+
+Both featurization paths ship in the same released Chemprop, so every comparison here is one flag
+apart — same env, same data, same seeds:
 
 | Path | Featurizer | How it is enabled |
 |------|------------|-------------------|
@@ -39,6 +55,62 @@ Three tiers are measured:
      ![Pipeline overview](results/figures/<filename>.png) -->
 
 ---
+
+## Using it in your own work
+
+Install a Chemprop that contains the reaction path (`chemprop >= 2.3.1` pulls a compatible
+`cuik_molmaker >= 0.3.0` automatically) and add one flag.
+
+### Command line
+
+```bash
+chemprop train \
+    --data-path reactions.csv \
+    --reaction-columns rxn_smiles \
+    --target-columns ea \
+    --keep-h \
+    --use-cuikmolmaker-featurization
+```
+
+The flag also works with `chemprop predict`, `chemprop fingerprint` and `chemprop hpopt`. It
+changes only *how* features are computed — the features themselves are identical, so models
+trained with and without it are interchangeable.
+
+Reaction SMILES must be **atom-mapped** (`reactants>>products`). Useful companions:
+
+| Flag | Meaning |
+|------|---------|
+| `--rxn-mode` | `REAC_DIFF` (default), `REAC_PROD`, `PROD_DIFF`, and the three `*_BALANCE` variants |
+| `--multi-hot-atom-featurizer-mode` | `V1`, `V2` (default), `ORGANIC`, `RIGR` |
+| `--keep-h` | Required when the mapping includes explicit hydrogens (as in RGD1) |
+
+Not supported alongside `--use-cuikmolmaker-featurization`: `--ignore-stereo`, `--reorder-atoms`,
+multi-component `--smiles-columns`, and `--molecule-featurizers` on a reaction task.
+
+### Python API
+
+```python
+from chemprop.data import CuikmolmakerReactionDataset, LazyReactionDatapoint
+from chemprop.featurizers.molgraph.reaction import CuikmolmakerCGRFeaturizer
+
+featurizer = CuikmolmakerCGRFeaturizer(atom_featurizer_mode="V2", reaction_mode="REAC_DIFF")
+
+# Featurize a batch of reactions directly:
+bmg = featurizer(["[CH3:1][CH2:2][OH:3]"], ["[CH3:1][CH:2]=[O:3]"])
+print(bmg.V.shape, bmg.E.shape)
+
+# Or build a dataset for training (always on-the-fly; caching is not supported):
+datapoints = [LazyReactionDatapoint.from_smi(rxn, keep_h=True, y=[target]) for rxn, target in rows]
+dataset = CuikmolmakerReactionDataset(datapoints, featurizer)
+```
+
+## Downstream work
+
+**CheMeleon-Rxn** — a foundation model for reaction property prediction, pre-trained at a scale
+this accelerated featurization makes practical.
+
+- Code: <https://github.com/MSDLLCpapers/chemeleon-rxn>
+- Pre-print: *coming soon* <!-- TODO: add pre-print DOI/arXiv link when available -->
 
 ## Requirements
 
@@ -323,6 +395,7 @@ cuik-reactmaker-benchmarks/
 
 ## References
 
-- cuik-molmaker: <https://github.com/NVIDIA-Digital-Bio/cuik-molmaker>
-- Chemprop: <https://github.com/chemprop/chemprop>
+- cuik-molmaker: <https://github.com/NVIDIA-Digital-Bio/cuik-molmaker> (reaction support since 0.3.0)
+- Chemprop: <https://github.com/chemprop/chemprop> (reaction support since 2.3.1)
+- CheMeleon-Rxn: <https://github.com/MSDLLCpapers/chemeleon-rxn> (pre-print coming soon)
 - RGD1 dataset: <https://doi.org/10.5281/zenodo.10078142>
