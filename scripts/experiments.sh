@@ -10,9 +10,8 @@
 #   Step 5 — inference benchmark (GPU, ~30 min)
 #   Step 6 — figures + tables
 #
-# All scripts must be run from the repo root with chemprop_cuik_rxn env active:
-#   conda activate chemprop_cuik_rxn
-#   cd ~/chemprop && git checkout cuik_reactmaker
+# All scripts must be run from the repo root with chemprop_bench_v031 env active:
+#   conda activate chemprop_bench_v031
 #   cd ~/projects/cuik-reactmaker-benchmarks
 #   bash experiments.sh
 

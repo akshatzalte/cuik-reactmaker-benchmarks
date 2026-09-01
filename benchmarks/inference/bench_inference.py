@@ -7,7 +7,7 @@ on test sets of varying size. Inference is featurization-dominated (no backward
 pass), so the speedup is the most dramatic of the three tiers.
 
 Usage:
-    conda activate chemprop_cuik_rxn
+    conda activate chemprop_bench_v031
     python benchmarks/inference/bench_inference.py \
         --data-dir data/ \
         --model-train-size 10k \

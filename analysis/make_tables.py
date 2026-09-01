@@ -125,9 +125,13 @@ def main():
     # Featurization at batch_size=50
     if "python" in feat_agg.columns or "Python CGR (µs/rxn)" in feat_agg.columns:
         try:
-            feat_raw = feat[feat["batch_size"] == 50].groupby("path")["time_per_rxn_us"].median()
+            # Use batch_size=50 when present, else the closest batch size that
+            # was actually measured (avoids silent NaNs in the summary table).
+            sizes = sorted(feat["batch_size"].unique())
+            bs = 50 if 50 in sizes else min(sizes, key=lambda b: abs(b - 50))
+            feat_raw = feat[feat["batch_size"] == bs].groupby("path")["time_per_rxn_us"].median()
             summary_rows.append({
-                "Tier": "Featurization (batch=50)",
+                "Tier": f"Featurization (batch={bs})",
                 "Baseline": f"{feat_raw.get('python', float('nan')):.1f} µs/rxn",
                 "C++ CGR": f"{feat_raw.get('cuik', float('nan')):.1f} µs/rxn",
                 "Speedup": fmt_speedup(feat_raw.get("python", 1) / feat_raw.get("cuik", 1)),

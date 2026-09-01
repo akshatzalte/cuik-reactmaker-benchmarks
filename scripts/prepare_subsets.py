@@ -3,7 +3,7 @@
 Create fixed-size RGD1 subsets for benchmarking.
 
 Usage:
-    conda activate chemprop_cuik_rxn
+    conda activate chemprop_bench_v031
     python scripts/prepare_subsets.py \
         --source /home/akshatz/bond_order_free/barriers_rgd1/dataset/rgd1_data.csv \
         --outdir data/

@@ -7,7 +7,7 @@ Two sub-experiments:
   --mode total     : total featurization time vs dataset size (fixed batch_size=50, vary N)
 
 Usage:
-    conda activate chemprop_cuik_rxn
+    conda activate chemprop_bench_v031
     cd ~/projects/cuik-reactmaker-benchmarks
 
     # Per-reaction time vs batch size
@@ -61,7 +61,12 @@ def setup_cuik_featurizer():
     bond_feats = cuik_molmaker.bond_feature_names_to_array(
         ["is-null", "bond-type-onehot", "conjugated", "in-ring", "stereo"]
     )
-    mode_int = cuik_molmaker.reaction_mode_names_to_array(["REAC_DIFF"])[0]
+    # cuik-molmaker >= 0.3.0 exposes the scalar reaction_mode_to_int; older
+    # pre-release builds used the plural reaction_mode_names_to_array.
+    if hasattr(cuik_molmaker, "reaction_mode_to_int"):
+        mode_int = int(cuik_molmaker.reaction_mode_to_int("REAC_DIFF"))
+    else:
+        mode_int = int(cuik_molmaker.reaction_mode_names_to_array(["REAC_DIFF"])[0])
     return cuik_molmaker, atom_onehot, atom_float, bond_feats, mode_int
 
 
