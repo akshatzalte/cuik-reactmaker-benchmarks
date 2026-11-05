@@ -40,7 +40,7 @@ echo "[Step 2] Featurization timing (per-reaction vs batch size)..."
 python benchmarks/featurization/bench_featurization.py \
     --mode per-rxn \
     --data-path "$DATA" \
-    --batch-sizes 8 16 32 64 128 256 512 1024 \
+    --batch-sizes 1 8 16 32 50 64 128 256 512 1024 \
     --n-warmup 5 --n-trials 50 \
     --output results/raw/featurization_timing.csv
 

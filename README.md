@@ -20,7 +20,7 @@ direct bond lookups rather than per-atom, per-bond Python calls.
 
 ## Headline results
 
-> RGD1 (353k reactions) · V2 featurizer · REAC_DIFF mode · `batch_size=50` · NVIDIA GeForce RTX 3090.
+> RGD1 (353k reactions) · V2 featurizer · REAC_DIFF mode · `batch_size=50` · AMD Ryzen Threadripper PRO 5975WX (64 threads) · NVIDIA GeForce RTX 4090.
 
 ![Headline results](results/figures/fig_combined.png)
 
@@ -122,7 +122,7 @@ this accelerated featurization makes practical.
 | Resource | Needed for | Notes |
 |----------|-----------|-------|
 | CPU | all tiers | Featurization timings are CPU-bound and the most sensitive to contention. |
-| NVIDIA GPU | training, inference | ~8 GB is plenty at `batch_size=50`. Reference numbers used an RTX 3090. |
+| NVIDIA GPU | training, inference | ~8 GB is plenty at `batch_size=50`. Reference numbers used an RTX 4090 (see `results/hardware.txt`). |
 | Disk | dataset subsets + checkpoints | ~1 GB for `data/`, a few GB for `results/models/`. |
 | RAM | 300k subset | ~8 GB. |
 
@@ -299,10 +299,14 @@ from batching overhead alone:
 
 | Batch size | Python CGR | C++ CGR | Speedup |
 |---|---|---|---|
-| 8 | ~707 µs/rxn | ~92 µs/rxn | 7.7× |
-| 50 (default) | ~700 µs/rxn | ~84 µs/rxn | **8.3×** |
-| 256 | ~701 µs/rxn | ~84 µs/rxn | 8.4× |
-| 1024 | ~695 µs/rxn | ~92 µs/rxn | 7.5× |
+| 8 | 706.9 µs/rxn | 91.6 µs/rxn | 7.7× |
+| 64 | 700.0 µs/rxn | 84.5 µs/rxn | 8.3× |
+| 256 | 700.6 µs/rxn | 83.5 µs/rxn | **8.4×** |
+| 1024 | 695.4 µs/rxn | 92.3 µs/rxn | 7.5× |
+
+The per-reaction sweep used powers of two; the chemprop default `batch_size=50` is covered by the
+total-time measurement instead (100k reactions at batch 50: 71.4 s → 8.5 s, **8.4×**). The full
+sweep is in `results/tables/featurization_by_batch.csv`.
 
 ### Training
 
