@@ -11,10 +11,20 @@
 #   bash scripts/run_when_idle.sh [GPU_ID]
 #   MAX_LOAD=6 MAX_GPU_MEM_MIB=500 CHECKS=3 bash scripts/run_when_idle.sh 0
 #
-# Run it detached so it survives a disconnect:
+# Activate the environment first (see README requirements), then run it detached
+# so it survives a disconnect:
+#   conda activate <env with chemprop >= 2.3.1>
 #   nohup bash scripts/run_when_idle.sh 0 > logs/idle_runner.out 2>&1 &
 #
 set -u -o pipefail
+
+# Fail now rather than after a multi-hour wait: the suite and the provenance
+# block both need chemprop and cuik-molmaker importable.
+if ! python -c "import chemprop, cuik_molmaker" 2>/dev/null; then
+    echo "error: chemprop / cuik_molmaker not importable — activate an environment" >&2
+    echo "       with chemprop >= 2.3.1 before starting (see README requirements)." >&2
+    exit 2
+fi
 
 GPU=${1:-0}
 MAX_LOAD=${MAX_LOAD:-8}            # 1-minute load average must be below this
@@ -41,6 +51,7 @@ is_idle() {
 }
 
 log "waiting for idle: load1 < $MAX_LOAD and GPU $GPU memory < ${MAX_GPU_MEM_MIB} MiB, ${CHECKS}x ${INTERVAL}s apart"
+log "once idle the full suite runs: featurization (~20 min CPU), training 1k-300k x 3 seeds (~4 h GPU), inference (~30 min GPU), figures"
 
 deadline=$(( $(date +%s) + MAX_WAIT_HOURS * 3600 ))
 streak=0
