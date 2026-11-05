@@ -1,6 +1,6 @@
 # cuik-reactmaker-benchmarks
 
-`cuik-reactmaker` extends [`cuik-molmaker`](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker)
+`cuik-reactmaker` extends [`cuik-molmaker`](https://github.com/NVIDIA-BioNeMo/cuik-molmaker)
 from molecules to **reactions**. Where `cuik-molmaker` turns a batch of SMILES into atom, bond and
 edge-index arrays in C++, `cuik-reactmaker` does the same for an atom-mapped reactant/product pair,
 producing the **Condensed Graph of Reaction (CGR)** — the doubled atom and bond feature tensors
@@ -37,7 +37,7 @@ carry it:
 
 | Package | Minimum version | What it contributes |
 |---------|-----------------|---------------------|
-| [cuik-molmaker](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker) | **0.3.0** ([PR #4](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker/pull/4)) | `batch_reaction_featurizer`, `reaction_mode_to_int` — the C++ CGR kernel |
+| [cuik-molmaker](https://github.com/NVIDIA-BioNeMo/cuik-molmaker) | **0.3.0** ([PR #4](https://github.com/NVIDIA-BioNeMo/cuik-molmaker/pull/4)) | `batch_reaction_featurizer`, `reaction_mode_to_int` — the C++ CGR kernel |
 | [chemprop](https://github.com/chemprop/chemprop) | **2.3.1** ([PR #1365](https://github.com/chemprop/chemprop/pull/1365)) | `CuikmolmakerCGRFeaturizer`, `CuikmolmakerReactionDataset`, and `--use-cuikmolmaker-featurization` for reactions |
 
 [Chemprop](https://github.com/chemprop/chemprop) is the first adopter and the setting for every
@@ -137,7 +137,7 @@ Any environment with these versions works — there is nothing benchmark-specifi
 |---------|-------------|-----|
 | Python | 3.11 or 3.12 | Chemprop-supported versions. |
 | `chemprop` | **>= 2.3.1** | First release carrying both CGR paths (PR [#1365](https://github.com/chemprop/chemprop/pull/1365)). |
-| `cuik_molmaker` | **>= 0.3.0** | Provides `batch_reaction_featurizer` (PR [#4](https://github.com/NVIDIA-Digital-Bio/cuik-molmaker/pull/4)). Installed automatically as a Chemprop dependency. |
+| `cuik_molmaker` | **>= 0.3.0** | Provides `batch_reaction_featurizer` (PR [#4](https://github.com/NVIDIA-BioNeMo/cuik-molmaker/pull/4)). Installed automatically as a Chemprop dependency. |
 | `rdkit` | matched to `cuik_molmaker` | Not chosen by hand — see the ABI note below. |
 | `torch` | >= 2.1, matching your CUDA driver | Reference runs used 2.5.1+cu121 because this host's driver is CUDA 12.0. |
 | `pandas`, `matplotlib`, `pytest` | any recent | Analysis, plotting, correctness checks. |
@@ -386,7 +386,7 @@ cuik-reactmaker-benchmarks/
 
 ## References
 
-- cuik-molmaker: <https://github.com/NVIDIA-Digital-Bio/cuik-molmaker> (reaction support since 0.3.0)
+- cuik-molmaker: <https://github.com/NVIDIA-BioNeMo/cuik-molmaker> (reaction support since 0.3.0)
 - Chemprop: <https://github.com/chemprop/chemprop> (reaction support since 2.3.1)
 - CheMeleon-Rxn: <https://github.com/MSDLLCpapers/chemeleon-rxn> (pre-print coming soon)
 - RGD1 dataset: <https://doi.org/10.5281/zenodo.10078142>
